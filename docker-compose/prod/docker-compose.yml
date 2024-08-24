@@ -1,6 +1,19 @@
 services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.2
+    container_name: keycloak
+    ports:
+      - "7080:8080"
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+    command: "start-dev"
+    extends:
+      file: common-config.yml
+      service: network-deploy-service
+
   read:
-    image: grafana/loki:3.1.0
+    image: grafana/loki:3.0.0
     command: "-config.file=/etc/loki/config.yaml -target=read"
     ports:
       - 3101:3100
@@ -21,7 +34,7 @@ services:
           - loki
 
   write:
-    image: grafana/loki:3.1.0
+    image: grafana/loki:3.0.0
     command: "-config.file=/etc/loki/config.yaml -target=write"
     ports:
       - 3102:3100
@@ -40,7 +53,7 @@ services:
       <<: *loki-dns
 
   alloy:
-    image: grafana/alloy:latest
+    image: grafana/alloy:v1.0.0
     volumes:
       - ../observability/alloy/alloy-local-config.yaml:/etc/alloy/config.alloy:ro
       - /var/run/docker.sock:/var/run/docker.sock
@@ -54,7 +67,7 @@ services:
       service: network-deploy-service
 
   minio:
-    image: minio/minio
+    image: minio/minio:RELEASE.2024-05-27T19-17-46Z
     entrypoint:
       - sh
       - -euc
@@ -105,7 +118,7 @@ services:
       service: network-deploy-service
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.0.0
     environment:
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
       - GF_AUTH_ANONYMOUS_ENABLED=true
@@ -131,7 +144,7 @@ services:
       service: network-deploy-service
 
   backend:
-    image: grafana/loki:3.1.0
+    image: grafana/loki:3.0.0
     volumes:
       - ../observability/loki/loki-config.yaml:/etc/loki/config.yaml
     ports:
@@ -144,9 +157,8 @@ services:
       file: common-config.yml
       service: network-deploy-service
 
-
   gateway:
-    image: nginx:latest
+    image: nginx:1.25.5
     depends_on:
       - read
       - write
@@ -216,7 +228,7 @@ services:
       service: network-deploy-service
 
   configserver:
-    image: "nikser871/configserver:s11"
+    image: "nikser871/configserver:s12"
     container_name: configserver-ms
     ports:
       - "8071:8071"
@@ -233,7 +245,7 @@ services:
       OTEL_SERVICE_NAME: "configserver"
 
   eurekaserver:
-    image: "nikser871/eurekaserver:s11"
+    image: "nikser871/eurekaserver:s12"
     container_name: eurekaserver-ms
     ports:
       - "8070:8070"
@@ -254,10 +266,8 @@ services:
       OTEL_SERVICE_NAME: "eurekaserver"
 
   accounts:
-    image: "nikser871/accounts:s11"
+    image: "nikser871/accounts:s12"
     container_name: accounts-ms
-    ports:
-      - "8080:8080"
     depends_on:
       configserver:
         condition: service_healthy
@@ -277,10 +287,8 @@ services:
       service: microservice-eurekaserver-config
 
   loans:
-    image: "nikser871/loans:s11"
+    image: "nikser871/loans:s12"
     container_name: loans-ms
-    ports:
-      - "8090:8090"
     depends_on:
       configserver:
         condition: service_healthy
@@ -300,10 +308,8 @@ services:
       service: microservice-eurekaserver-config
 
   cards:
-    image: "nikser871/cards:s11"
+    image: "nikser871/cards:s12"
     container_name: cards-ms
-    ports:
-      - "9000:9000"
     depends_on:
       configserver:
         condition: service_healthy
@@ -323,7 +329,7 @@ services:
       service: microservice-eurekaserver-config
 
   gatewayserver:
-    image: "nikser871/gatewayserver:s11"
+    image: "nikser871/gatewayserver:s12"
     container_name: gatewayserver-ms
     ports:
       - "8072:8072"
@@ -337,6 +343,7 @@ services:
     environment:
       SPRING_APPLICATION_NAME: "gatewayserver"
       OTEL_SERVICE_NAME: "gatewayserver"
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK-SET-URI: "http://keycloak:8080/realms/master/protocol/openid-connect/certs"
     extends:
       file: common-config.yml
       service: microservice-eurekaserver-config

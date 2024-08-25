@@ -114,7 +114,7 @@
 				<version>3.4.2</version>
 				<configuration>
 					<to>
-						<image>nikser871/${project.artifactId}:s12</image>
+						<image>nikser871/${project.artifactId}:s13</image>
 					</to>
 				</configuration>
 			</plugin>

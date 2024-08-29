@@ -37,6 +37,10 @@ spring:
         binder:
           brokers:
             - localhost:9092
+    kubernetes:
+      discovery:
+        all-namespaces: true
+
 
 management:
   endpoints:
@@ -64,15 +68,6 @@ management:
 endpoints:
   shutdown:
     enabled: true
-
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    fetchRegistry: true
-    registerWithEureka: true
-    serviceUrl:
-      defaultZone: http://localhost:8070/eureka/
 
 info:
   app:
